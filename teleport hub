@@ -1,0 +1,336 @@
+--[[
+    Mini Painel de Teleport - Delta X Android
+    FINAL - Blue e Red com a MESMA altura
+--]]
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local VirtualUser = game:GetService("VirtualUser")
+
+local function TeleportWithProtection(targetPosition)
+    if not Character or not Humanoid or Humanoid.Health <= 0 then
+        warn("Personagem inválido ou morto")
+        return false
+    end
+    
+    local originalPlatformStand = Humanoid.PlatformStand
+    local originalAutoRotate = Humanoid.AutoRotate
+    
+    Humanoid.PlatformStand = true
+    Humanoid.AutoRotate = false
+    
+    local success = pcall(function()
+        Character:SetPrimaryPartCFrame(targetPosition)
+    end)
+    
+    if success then
+        task.wait(0.1)
+        local humanoidRoot = Character:FindFirstChild("HumanoidRootPart")
+        if humanoidRoot then
+            local tinyMove = targetPosition * CFrame.new(0, 0, 0.2)
+            Character:SetPrimaryPartCFrame(tinyMove)
+            task.wait(0.05)
+            Character:SetPrimaryPartCFrame(targetPosition)
+        end
+    end
+    
+    task.wait(0.1)
+    Humanoid.PlatformStand = originalPlatformStand
+    Humanoid.AutoRotate = originalAutoRotate
+    
+    return success
+end
+
+-- Criar GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "TeleportPanel"
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.ResetOnSpawn = false
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 250, 0, 200)
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -100)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+mainFrame.BackgroundTransparency = 0.15
+mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = mainFrame
+
+local shadow = Instance.new("Frame")
+shadow.Size = UDim2.new(1, 0, 1, 0)
+shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+shadow.BackgroundTransparency = 0.7
+shadow.BorderSizePixel = 0
+shadow.ZIndex = -1
+shadow.Parent = mainFrame
+
+local shadowCorner = Instance.new("UICorner")
+shadowCorner.CornerRadius = UDim.new(0, 12)
+shadowCorner.Parent = shadow
+
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 30)
+titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+titleBar.BackgroundTransparency = 0.3
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 12)
+titleCorner.Parent = titleBar
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 1, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "⛏️ Teleport Hub ⛏️"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 14
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextXAlignment = Enum.TextXAlignment.Center
+titleLabel.Parent = titleBar
+
+-- Botão Blue
+local blueButton = Instance.new("TextButton")
+blueButton.Size = UDim2.new(0.9, 0, 0, 35)
+blueButton.Position = UDim2.new(0.05, 0, 0, 40)
+blueButton.BackgroundColor3 = Color3.fromRGB(0, 100, 255)
+blueButton.BackgroundTransparency = 0.2
+blueButton.Text = "🔵 Teleport BLUE"
+blueButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+blueButton.TextSize = 12
+blueButton.Font = Enum.Font.GothamSemibold
+blueButton.AutoButtonColor = false
+blueButton.Parent = mainFrame
+
+local blueCorner = Instance.new("UICorner")
+blueCorner.CornerRadius = UDim.new(0, 8)
+blueCorner.Parent = blueButton
+
+-- Botão Red
+local redButton = Instance.new("TextButton")
+redButton.Size = UDim2.new(0.9, 0, 0, 35)
+redButton.Position = UDim2.new(0.05, 0, 0, 82)
+redButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+redButton.BackgroundTransparency = 0.2
+redButton.Text = "🔴 Teleport RED"
+redButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+redButton.TextSize = 12
+redButton.Font = Enum.Font.GothamSemibold
+redButton.AutoButtonColor = false
+redButton.Parent = mainFrame
+
+local redCorner = Instance.new("UICorner")
+redCorner.CornerRadius = UDim.new(0, 8)
+redCorner.Parent = redButton
+
+-- Botão Local Seguro
+local safeButton = Instance.new("TextButton")
+safeButton.Size = UDim2.new(0.9, 0, 0, 35)
+safeButton.Position = UDim2.new(0.05, 0, 0, 124)
+safeButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+safeButton.BackgroundTransparency = 0.2
+safeButton.Text = "🟢 Local Seguro"
+safeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+safeButton.TextSize = 12
+safeButton.Font = Enum.Font.GothamSemibold
+safeButton.AutoButtonColor = false
+safeButton.Parent = mainFrame
+
+local safeCorner = Instance.new("UICorner")
+safeCorner.CornerRadius = UDim.new(0, 8)
+safeCorner.Parent = safeButton
+
+-- Botão Fechar
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -35, 0, 0)
+closeButton.BackgroundTransparency = 1
+closeButton.Text = "✕"
+closeButton.TextColor3 = Color3.fromRGB(255, 100, 100)
+closeButton.TextSize = 18
+closeButton.Font = Enum.Font.GothamBold
+closeButton.Parent = mainFrame
+
+local function onButtonHover(button)
+    button.MouseEnter:Connect(function()
+        button.BackgroundTransparency = 0.05
+        button.TextTransparency = 0.1
+    end)
+    button.MouseLeave:Connect(function()
+        button.BackgroundTransparency = 0.2
+        button.TextTransparency = 0
+    end)
+end
+
+onButtonHover(blueButton)
+onButtonHover(redButton)
+onButtonHover(safeButton)
+
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+-- ALTURA PADRÃO PARA OS DOIS (3 studs)
+local DEFAULT_HEIGHT = 3
+
+-- ============ TELEPORTE BLUE ============
+blueButton.MouseButton1Click:Connect(function()
+    local ladderPart = workspace.Map.Blue:GetChildren()[5].Ladder:GetChildren()[4]
+    
+    if not ladderPart or not ladderPart:IsA("BasePart") then
+        ladderPart = workspace.Map.Blue:GetChildren()[5].Ladder:GetChildren()[1]
+    end
+    
+    if not ladderPart or not ladderPart:IsA("BasePart") then
+        warn("Escada Blue não encontrada!")
+        return
+    end
+    
+    local blockPosition = ladderPart.Position
+    local blockCFrame = ladderPart.CFrame
+    
+    local sideDirection = blockCFrame.RightVector
+    local sideDistance = 4.5
+    
+    -- Usando a altura padrão
+    local sidePosition = Vector3.new(
+        blockPosition.X + (sideDirection.X * sideDistance),
+        blockPosition.Y + DEFAULT_HEIGHT,
+        blockPosition.Z + (sideDirection.Z * sideDistance)
+    )
+    
+    local lookAtBlock = CFrame.lookAt(sidePosition, blockPosition)
+    local finalPosition = lookAtBlock
+    
+    local randomOffset = CFrame.new(
+        math.random(-10, 10) / 100,
+        math.random(-5, 5) / 100,
+        math.random(-10, 10) / 100
+    )
+    finalPosition = finalPosition * randomOffset
+    
+    task.wait(math.random(50, 150) / 1000)
+    
+    local success = TeleportWithProtection(finalPosition)
+    
+    if success then
+        blueButton.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+        task.wait(0.2)
+        blueButton.BackgroundColor3 = Color3.fromRGB(0, 100, 255)
+        print("✅ Teleportado BLUE! Altura: " .. DEFAULT_HEIGHT)
+    else
+        blueButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        task.wait(0.2)
+        blueButton.BackgroundColor3 = Color3.fromRGB(0, 100, 255)
+    end
+end)
+
+-- ============ TELEPORTE RED (MESMA ALTURA DO BLUE) ============
+redButton.MouseButton1Click:Connect(function()
+    local ladderPart = workspace.Map.Red:GetChildren()[5].Ladder:GetChildren()[4]
+    
+    if not ladderPart or not ladderPart:IsA("BasePart") then
+        ladderPart = workspace.Map.Red:GetChildren()[5].Ladder:GetChildren()[1]
+    end
+    
+    if not ladderPart or not ladderPart:IsA("BasePart") then
+        warn("Escada Red não encontrada!")
+        return
+    end
+    
+    local blockPosition = ladderPart.Position
+    local blockCFrame = ladderPart.CFrame
+    
+    local sideDirection = blockCFrame.RightVector
+    local sideDistance = 4.5
+    
+    -- MESMA altura do Blue!
+    local sidePosition = Vector3.new(
+        blockPosition.X + (sideDirection.X * sideDistance),
+        blockPosition.Y + DEFAULT_HEIGHT,  -- AGORA USA A MESMA ALTURA DO BLUE
+        blockPosition.Z + (sideDirection.Z * sideDistance)
+    )
+    
+    local lookAtBlock = CFrame.lookAt(sidePosition, blockPosition)
+    local finalPosition = lookAtBlock
+    
+    local randomOffset = CFrame.new(
+        math.random(-10, 10) / 100,
+        math.random(-5, 5) / 100,
+        math.random(-10, 10) / 100
+    )
+    finalPosition = finalPosition * randomOffset
+    
+    task.wait(math.random(50, 150) / 1000)
+    
+    local success = TeleportWithProtection(finalPosition)
+    
+    if success then
+        redButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        task.wait(0.2)
+        redButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        print("✅ Teleportado RED! Altura: " .. DEFAULT_HEIGHT)
+    else
+        redButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+        task.wait(0.2)
+        redButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    end
+end)
+
+-- ============ LOCAL SEGURO ============
+safeButton.MouseButton1Click:Connect(function()
+    local safePosition = CFrame.new(-1.0228138, -21.4500046, -1.28326046)
+    local randomOffset = CFrame.new(
+        math.random(-50, 50) / 100,
+        math.random(-20, 20) / 100,
+        math.random(-50, 50) / 100
+    )
+    local finalPosition = safePosition * randomOffset
+    task.wait(math.random(50, 150) / 1000)
+    
+    local success = TeleportWithProtection(finalPosition)
+    if success then
+        safeButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        task.wait(0.2)
+        safeButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+        print("✅ Teleportado Local Seguro!")
+    else
+        safeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        task.wait(0.2)
+        safeButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+    end
+end)
+
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    Character = newChar
+    Humanoid = Character:WaitForChild("Humanoid")
+end)
+
+local function antiDetection()
+    pcall(function()
+        LocalPlayer.Idled:Connect(function()
+            VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+            task.wait(0.1)
+            VirtualUser:Button2Up(Vector2.new(0, 0))
+        end)
+    end)
+end
+
+spawn(function()
+    while screenGui.Parent do
+        antiDetection()
+        task.wait(5)
+    end
+end)
+
+print("✅ Painel carregado - Blue e Red com a MESMA altura (" .. DEFAULT_HEIGHT .. " studs)!")
