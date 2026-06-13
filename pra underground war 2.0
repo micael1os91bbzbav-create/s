@@ -1,0 +1,204 @@
+-- Criando a interface do botão
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+-- Variáveis do botão
+local screenGui = Instance.new("ScreenGui")
+local button = Instance.new("ImageButton")
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+-- Configurar GUI
+screenGui.Name = "MultiScriptButton"
+screenGui.Parent = game.CoreGui
+screenGui.ResetOnSpawn = false -- Impede reset na UI
+
+-- Configurar botão (redondo e pequeno)
+button.Size = UDim2.new(0, 50, 0, 50)
+button.Position = UDim2.new(0.5, -25, 0.8, -25)
+button.BackgroundColor3 = Color3.fromRGB(52, 152, 219)
+button.BackgroundTransparency = 0
+button.BorderSizePixels = 0
+button.Image = "rbxassetid://3926305904" -- Ícone de script (ou use textura própria)
+button.ImageColor3 = Color3.fromRGB(255, 255, 255)
+button.ScaleType = Enum.ScaleType.Slice
+button.Parent = screenGui
+
+-- Adicionar borda arredondada (corners)
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(1, 0)
+corner.Parent = button
+
+-- Texto simples (opcional)
+local textLabel = Instance.new("TextLabel")
+textLabel.Size = UDim2.new(1, 0, 1, 0)
+textLabel.BackgroundTransparency = 1
+textLabel.Text = "▶"
+textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+textLabel.TextSize = 30
+textLabel.TextScaled = false
+textLabel.Font = Enum.Font.GothamBold
+textLabel.Parent = button
+
+-- Função para sumir com o botão
+local function hideButton()
+    local tween = TweenService:Create(button, 
+        TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        {BackgroundTransparency = 1, ImageTransparency = 1}
+    )
+    tween:Play()
+    task.wait(0.3)
+    button.Visible = false
+    screenGui.Enabled = false
+end
+
+-- Função para executar scripts
+local function executeScripts()
+    -- Executar primeiro script
+    loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Invisible-FE-19153"))()
+    
+    -- Pequena pausa entre execuções
+    task.wait(0.5)
+    
+    -- Executar segundo script
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/micael1os91bbzbav-create/s/refs/heads/main/gmh"))()
+    
+    task.wait(0.5)
+    
+    -- Executar terceiro script (teleport hub)
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/micael1os91bbzbav-create/s/refs/heads/main/teleport%20hub"))()
+    
+    print("Todos os scripts foram executados!")
+end
+
+-- Função para arrastar o botão
+local function startDrag(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = button.Position
+        
+        -- Feedback visual ao tocar
+        local tween = TweenService:Create(button, 
+            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0, 55, 0, 55)}
+        )
+        tween:Play()
+    end
+end
+
+local function drag(input)
+    if dragging then
+        local delta = input.Position - dragStart
+        local newX = startPos.X.Scale + (delta.X / workspace.CurrentCamera.ViewportSize.X)
+        local newY = startPos.Y.Scale + (delta.Y / workspace.CurrentCamera.ViewportSize.Y)
+        
+        -- Limitar posição nas bordas da tela
+        newX = math.clamp(newX, 0, 1)
+        newY = math.clamp(newY, 0, 1)
+        
+        button.Position = UDim2.new(newX, 0, newY, 0)
+    end
+end
+
+local function endDrag(input)
+    if dragging then
+        dragging = false
+        
+        -- Voltar ao tamanho original
+        local tween = TweenService:Create(button, 
+            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0, 50, 0, 50)}
+        )
+        tween:Play()
+    end
+end
+
+-- Conectar eventos de toque para arrastar
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.Touch then
+        local mousePos = input.Position
+        local buttonPos = button.AbsolutePosition
+        local buttonSize = button.AbsoluteSize
+        
+        -- Verificar se tocou no botão
+        if mousePos.X >= buttonPos.X and mousePos.X <= buttonPos.X + buttonSize.X and
+           mousePos.Y >= buttonPos.Y and mousePos.Y <= buttonPos.Y + buttonSize.Y then
+            startDrag(input)
+        end
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.Touch then
+        drag(input)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.Touch then
+        endDrag(input)
+    end
+end)
+
+-- Ao clicar (não arrastar) executa os scripts
+button.MouseButton1Click:Connect(function()
+    if not dragging then
+        executeScripts()
+        
+        -- Feedback visual ao clicar
+        local tween = TweenService:Create(button, 
+            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0, 45, 0, 45)}
+        )
+        tween:Play()
+        task.wait(0.1)
+        tween = TweenService:Create(button, 
+            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0, 50, 0, 50)}
+        )
+        tween:Play()
+    end
+end)
+
+-- Monitorar morte/renascimento do jogador
+local character = Player.Character
+local function onCharacterAdded(newChar)
+    character = newChar
+    -- Sumir com o botão ao renascer
+    hideButton()
+    
+    -- Aguardar um pouco e então tentar recriar (opcional)
+    -- Se quiser que o botão reapareça após renascer, descomente as linhas abaixo
+    -- task.wait(2)
+    -- screenGui.Enabled = true
+    -- button.Visible = true
+end
+
+local function onCharacterRemoving()
+    -- Esconder botão imediatamente ao morrer
+    hideButton()
+end
+
+if character then
+    character.AncestryChanged:Connect(function()
+        if not character or character.Parent == nil then
+            hideButton()
+        end
+    end)
+end
+
+Player.CharacterAdded:Connect(onCharacterAdded)
+Player.CharacterRemoving:Connect(onCharacterRemoving)
+
+-- Executar scripts automaticamente ao iniciar (opcional)
+-- Descomente a linha abaixo se quiser executar tudo ao carregar
+-- executeScripts()
+
+print("Botão carregado com sucesso! Toque e arraste para mover, clique para executar todos os scripts.")
