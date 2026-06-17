@@ -649,12 +649,14 @@ local mouse = player:GetMouse()
 --// VARIÁVEIS DE SELEÇÃO E EDIÇÃO
 local portaisSelecionados = {}
 
+--// TABELA PARA ARMAZENAR O LADO DE APARIÇÃO DE CADA PORTAL
+local ladosAparicaoPorPortal = {}
+
 --// AJUSTES DOS PORTAIS
 local alturaPortalClique = 3
 local tempoTeleporteCooldown = 1
 local tamanhoPortal = 6
 local distanciaAparicao = 3
-local ladoAparicao = "Frente"
 local transparenciaPortal = 0.3
 local rotacaoPortal = 0
 local distanciaDeteccaoPortal = 15
@@ -1337,8 +1339,8 @@ local function processarNumerosPortais(texto)
 	return resultado
 end
 
---// FUNÇÃO TELEPORTE
-local function teleportarJogador(dePortal, paraPortal)
+--// FUNÇÃO TELEPORTE (AGORA USA O LADO DE CADA PORTAL)
+local function teleportarJogador(dePortal, paraPortal, portalDestinoNumero)
 	if not scriptAtivado then return end
 	
 	local reference = getPlayerReference()
@@ -1353,23 +1355,27 @@ local function teleportarJogador(dePortal, paraPortal)
 	
 	teleportCooldown[playerName] = agora
 	
+	-- PEGA O LADO DE APARIÇÃO DO PORTAL DE DESTINO
+	local lado = ladosAparicaoPorPortal[portalDestinoNumero] or "Frente"
+	
 	local novaPosicao
-	if ladoAparicao == "Frente" then
+	if lado == "Frente" then
 		novaPosicao = paraPortal.CFrame * CFrame.new(0, 0, -distanciaAparicao)
-	elseif ladoAparicao == "Trás" then
+	elseif lado == "Trás" then
 		novaPosicao = paraPortal.CFrame * CFrame.new(0, 0, distanciaAparicao)
-	elseif ladoAparicao == "Esquerda" then
+	elseif lado == "Esquerda" then
 		novaPosicao = paraPortal.CFrame * CFrame.new(-distanciaAparicao, 0, 0)
-	elseif ladoAparicao == "Direita" then
+	elseif lado == "Direita" then
 		novaPosicao = paraPortal.CFrame * CFrame.new(distanciaAparicao, 0, 0)
-	elseif ladoAparicao == "Cima" then
+	elseif lado == "Cima" then
 		novaPosicao = paraPortal.CFrame * CFrame.new(0, distanciaAparicao, 0)
-	elseif ladoAparicao == "Baixo" then
+	elseif lado == "Baixo" then
 		novaPosicao = paraPortal.CFrame * CFrame.new(0, -distanciaAparicao, 0)
 	end
 	
-	local rotacao = paraPortal.CFrame - paraPortal.CFrame.Position
-	novaPosicao = CFrame.new(novaPosicao.Position) * rotacao
+	-- Mantém a rotação original do jogador
+	local rotacaoJogador = reference.HumanoidRootPart.CFrame - reference.HumanoidRootPart.CFrame.Position
+	novaPosicao = CFrame.new(novaPosicao.Position) * rotacaoJogador
 	
 	reference:SetPrimaryPartCFrame(novaPosicao)
 end
@@ -1394,6 +1400,9 @@ local function criarPortal(posicao, olhandoPara)
 	portal.Material = Enum.Material.Neon
 	portal.Color = cor
 	portal.Transparency = transparenciaPortal
+	
+	-- DEFINE O LADO PADRÃO DO PORTAL COMO "Frente"
+	ladosAparicaoPorPortal[numeroPortal] = "Frente"
 	
 	local cframe = CFrame.new(posicao, posicao + olhandoPara) * CFrame.Angles(0, math.rad(rotacaoPortal), 0)
 	
@@ -1515,7 +1524,16 @@ local function atualizarRotacaoPortaisSelecionados(novaRotacao)
 	end
 end
 
---// LISTA DE PORTAIS (IGUAL A DOS AVIÕES)
+--// FUNÇÃO PARA ATUALIZAR LADO DE APARIÇÃO DOS PORTAIS SELECIONADOS
+local function atualizarLadoAparicaoPortaisSelecionados(novoLado)
+	for _, numero in ipairs(portaisSelecionados) do
+		if portaisAtivos[numero] then
+			ladosAparicaoPorPortal[numero] = novoLado
+		end
+	end
+end
+
+--// LISTA DE PORTAIS (MOSTRA TODOS AUTOMATICAMENTE)
 local portaisCriadosLabel = SectionPortais:CreateLabel("🌀 Portais Criados:")
 local portaisListaLabel = SectionPortais:CreateLabel("Nenhum portal criado")
 
@@ -1532,17 +1550,9 @@ local function atualizarListaPortais()
 		
 		local lista = {}
 		for i, num in ipairs(numeros) do
-			local selecionado = false
-			for _, s in ipairs(portaisSelecionados) do
-				if s == num then selecionado = true break end
-			end
-			if selecionado then
-				table.insert(lista, "[" .. num .. "]✓")
-			else
-				table.insert(lista, num)
-			end
+			table.insert(lista, num)
 		end
-		texto = texto .. table.concat(lista, ", ")
+		texto = texto .. table.concat(lista, " ")
 	end
 	portaisListaLabel:Set(texto)
 end
@@ -1761,25 +1771,37 @@ SectionPortais:CreateSlider({
 	end
 })
 
+--// DROPDOWN LADO DE APARIÇÃO (AGORA SÓ MEXE NOS PORTAIS SELECIONADOS!)
 SectionPortais:CreateDropdown({
-	Name = "🧭 Lado de Aparição",
+	Name = "🧭 Lado de Aparição (Selecionados)",
 	Options = {"Esquerda", "Direita", "Frente", "Trás", "Cima", "Baixo"},
 	CurrentOption = {"Esquerda"},
 	MultipleOptions = false,
 	Callback = function(option)
-		local opcaoSelecionada = option[1]
-		if opcaoSelecionada == "Esquerda" then
-			ladoAparicao = "Frente"
-		elseif opcaoSelecionada == "Direita" then
-			ladoAparicao = "Trás"
-		elseif opcaoSelecionada == "Frente" then
-			ladoAparicao = "Esquerda"
-		elseif opcaoSelecionada == "Trás" then
-			ladoAparicao = "Direita"
-		else
-			ladoAparicao = opcaoSelecionada
+		if #portaisSelecionados == 0 then
+			Rayfield:Notify({Title = "Aviso", Content = "Selecione os portais primeiro!", Duration = 2})
+			return
 		end
-		Rayfield:Notify({Title = "Lado Alterado", Content = "Aparição: " .. opcaoSelecionada, Duration = 2})
+		
+		local opcaoSelecionada = option[1]
+		local ladoReal
+		
+		if opcaoSelecionada == "Esquerda" then
+			ladoReal = "Frente"
+		elseif opcaoSelecionada == "Direita" then
+			ladoReal = "Trás"
+		elseif opcaoSelecionada == "Frente" then
+			ladoReal = "Esquerda"
+		elseif opcaoSelecionada == "Trás" then
+			ladoReal = "Direita"
+		else
+			ladoReal = opcaoSelecionada
+		end
+		
+		-- SÓ MUDAR O LADO DOS PORTAIS SELECIONADOS
+		atualizarLadoAparicaoPortaisSelecionados(ladoReal)
+		
+		Rayfield:Notify({Title = "Lado Alterado", Content = "Aparição: " .. opcaoSelecionada .. " para " .. #portaisSelecionados .. " portal(is)", Duration = 2})
 	end
 })
 
@@ -1866,6 +1888,7 @@ SectionPortais:CreateButton({
 			if portaisAtivos[num] then
 				portaisAtivos[num]:Destroy()
 				portaisAtivos[num] = nil
+				ladosAparicaoPorPortal[num] = nil
 				liberarNumero(num)
 				portaisDeletados = portaisDeletados + 1
 			end
@@ -1892,6 +1915,7 @@ SectionPortais:CreateButton({
 		maiorNumero = 0
 		teleportCooldown = {}
 		portaisSelecionados = {}
+		ladosAparicaoPorPortal = {}
 		atualizarListaPortais()
 		Rayfield:Notify({Title = "Portais", Content = "Todos os portais deletados!", Duration = 3})
 	end
@@ -2036,7 +2060,7 @@ RunService.Heartbeat:Connect(function()
 				local numeroPar = (numeroPortal % 2 == 1) and numeroPortal + 1 or numeroPortal - 1
 				local portalDestino = portaisAtivos[numeroPar]
 				if portalDestino and portalDestino.Parent then
-					teleportarJogador(portal, portalDestino)
+					teleportarJogador(portal, portalDestino, numeroPar)
 				end
 			end
 		else
